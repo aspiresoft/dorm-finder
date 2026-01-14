@@ -41,7 +41,7 @@
 
 <script>
     let GLOBAL_DATA = null;
-    const API_URL = "https://script.google.com/macros/s/AKfycbyfew3KVRPYyEBfFVwS5hHR_PIWF694Ycspt-jwSjFogbphbq1Cvt_IJ4dDpHAuXAQ/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycby5zgZfbg8c9b-PQ9kN1NAyekxrPFbZZXDsbBfcrWWToo08-JKO-ZJWaQBd-1qfJX4/exec";
 
     window.onload = function() {
         console.log("1. Veri çekme başladı...");
@@ -94,7 +94,12 @@
 							<h4 class="fw-bold text-primary">🏫 ${okulAd}</h4>
 							<p class="small text-muted mb-2">📍 ${okulAdres}</p>
 							<div style="height: 200px; border-radius: 10px; overflow: hidden;">
-								<iframe src="${okulEmbed}" width="100%" height="100%"></iframe>
+								<iframe
+								  src="${okulHarita}"
+								  style="border:0; width:100%; height:400px;"
+								  loading="lazy"
+								  referrerpolicy="no-referrer-when-downgrade">
+								</iframe>
 							</div>
 						</div>
 					</div>
@@ -133,7 +138,12 @@
                             <div class="row g-0">
                                 <div class="col-md-5">
                                     <div class="harita-konteyner">
-                                        <iframe src="${embedUrl}" allowfullscreen></iframe>
+										<iframe
+										  src="${haritaLink}"
+										  style="border:0; width:100%; height:400px;"
+										  loading="lazy"
+										  referrerpolicy="no-referrer-when-downgrade">
+										</iframe>
                                     </div>
                                 </div>
                                 <div class="col-md-7 d-flex align-items-center">
