@@ -41,7 +41,7 @@
 
 <script>
     let GLOBAL_DATA = null;
-    const API_URL = "https://script.google.com/macros/s/AKfycby5zgZfbg8c9b-PQ9kN1NAyekxrPFbZZXDsbBfcrWWToo08-JKO-ZJWaQBd-1qfJX4/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbzpN-iyPdiiHtz_QtzC4sZ-7eqw7MmB0SpdfTK7P24XyaU_wLkC9J9BzN1BWUU5GDw/exec";
 
     window.onload = function() {
         console.log("1. Veri çekme başladı...");
@@ -85,8 +85,6 @@
 			const okulAd = okulVerisi[1];
 			const okulHarita = okulVerisi[2];
 			const okulAdres = okulVerisi[3];
-			const okulEmbed = `https://maps.google.com/maps?q=${encodeURIComponent(okulAd + " " + okulAdres)}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
-
 			okulDetayDiv.innerHTML = `
 				<div class="col-md-10 col-lg-8">
 					<div class="card shadow-sm border-primary mb-4" style="border-left: 5px solid #007bff;">
@@ -128,9 +126,6 @@
                 const adres = yurt[3];
                 const sorumlu = yurt[4];
                 const telefon = yurt[5];
-                
-                const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(yurtAd + " " + adres)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-
                 const html = `
                     <div class="col-12 yurt-kart-sarmalayıcı">
                         <div class="card shadow">
@@ -153,7 +148,7 @@
                                             <p class="mb-2 text-muted"><strong>👤 Sorumlu:</strong> ${sorumlu}</p>
                                         </div>
                                         <div class="d-flex gap-2">
-                                            <a href="tel:${telefon.toString().replace(/\s/g, '')}" class="btn btn-success btn-lg px-4 shadow-sm">📞 ${telefon}</a>
+                                            <a href="tel:${telefon.toString().replace(/\s/g, '')}" class="btn btn-success btn-lg px-4 shadow-sm" onclick="tikSayisiniArtir('${yurtAd}')">📞 ${telefon}</a>
                                         </div>
                                     </div>
                                 </div>
@@ -174,6 +169,22 @@
 					</div>`;
 			}
     }
+
+    function tikSayisiniArtir(yurtAdi) {
+    // Arka planda Google'a "bu yurt tıklandı" bilgisini gönderir
+    fetch(API_URL, {
+        method: "POST",
+        mode: "no-cors", // Google Apps Script POST isteklerinde no-cors gerekebilir
+        cache: "no-cache",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            action: "artirTik",
+            yurtAdi: yurtAdi
+        })
+    });
+}
+
+
 </script>
 
 </body>
