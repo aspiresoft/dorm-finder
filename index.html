@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Üniversite Yurt Rehberi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f7f6; padding: 40px 15px; font-family: 'Segoe UI', sans-serif; }
+        
+        /* KARTLARI ORTALAYAN KRİTİK ALAN */
+        .yurt-kart-sarmalayıcı {
+            display: flex;
+            justify-content: center; /* Yatayda ortalar */
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .card { 
+            border: none; 
+            border-radius: 20px; 
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 950px; /* Kartın maksimum genişliği */
+            background: #fff;
+        }
+
+        .harita-konteyner { width: 100%; height: 100%; min-height: 300px; }
+        iframe { width: 100%; height: 100%; border: 0; min-height: 300px; }
+        
+        .badge-tel { 
+            background-color: #f0f7ff; 
+            color: #007bff; 
+            padding: 10px 15px; 
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+
+        #okulSecimi { border-radius: 12px; border: 2px solid #e0e0e0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="text-center mb-5">
+        <h1 class="fw-bold text-dark">🏠 Yurt Rehberi</h1>
+        <p class="text-muted">Üniversitenizi seçin, size en uygun yurtları listeleyelim.</p>
+    </div>
+    
+    <div class="row justify-content-center mb-5">
+        <div class="col-md-6">
+            <div class="card p-4 shadow-sm">
+                <label class="form-label fw-bold text-secondary text-center d-block mb-3">Üniversitenizi Seçin</label>
+                <select id="okulSecimi" class="form-select form-select-lg" onchange="yurtlariListele()">
+                    <option value="">Veriler yükleniyor...</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div id="yurtListesi" class="row"></div>
+</div>
+
+<script>
+    let GLOBAL_DATA = null;
+    const API_URL = "https://script.google.com/macros/s/AKfycbyfew3KVRPYyEBfFVwS5hHR_PIWF694Ycspt-jwSjFogbphbq1Cvt_IJ4dDpHAuXAQ/exec";
+
+    window.onload = function() {
+        fetch(API_URL, { redirect: 'follow' })
+            .then(res => res.json())
+            .then(data => {
+                GLOBAL_DATA = data;
+                verileriDoldur(data);
+            })
+            .catch(err => {
+                console.error("Hata:", err);
+                document.getElementById("okulSecimi").options[0].text = "Hata! Tekrar deneyin.";
+            });
+    };
+
+    function verileriDoldur(data) {
+        const select = document.getElementById("okulSecimi");
+        select.innerHTML = '<option value="">Üniversite seçiniz...</option>';
+        for (let i = 1; i < data.okulListesi.length; i++) {
+            let okulID = data.okulListesi[i][0];
+            let okulAd = data.okulListesi[i][1]; 
+            if(okulID) {
+                let opt = document.createElement("option");
+                opt.value = okulID.toString().trim();
+                opt.text = okulAd;
+                select.appendChild(opt);
+            }
+        }
+    }
+
+    function yurtlariListele() {
+        const secilenOkulID = document.getElementById("okulSecimi").value;
+        const listeDiv = document.getElementById("yurtListesi");
+        listeDiv.innerHTML = "";
+
+        if (!secilenOkulID) return;
+
+        const yurtlar = GLOBAL_DATA.yurtListesi;
+
+        for (let i = 1; i < yurtlar.length; i++) {
+            const yurt = yurtlar[i];
+            const bagliOkullarString = yurt[0].toString();
+            const okulIDListesi = bagliOkullarString.split(',').map(item => item.trim());
+
+            if (okulIDListesi.includes(secilenOkulID)) {
+                const yurtAd = yurt[1];
+                const haritaLink = yurt[2];
+                const adres = yurt[3];
+                const sorumlu = yurt[4];
+                const telefon = yurt[5];
+                
+                // Harita Linkini Düzelttim ($ işareti eklendi)
+                const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(yurtAd + " " + adres)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+
+                const html = `
+                    <div class="col-12 yurt-kart-sarmalayıcı">
+                        <div class="card shadow">
+                            <div class="row g-0">
+                                <div class="col-md-5">
+                                    <div class="harita-konteyner">
+                                        <iframe src="${embedUrl}" allowfullscreen></iframe>
+                                    </div>
+                                </div>
+                                <div class="col-md-7 d-flex align-items-center">
+                                    <div class="card-body p-4 p-lg-5">
+                                        <h3 class="fw-bold mb-3">${yurtAd}</h3>
+                                        <div class="mb-4">
+                                            <p class="mb-2 text-muted"><strong>📍 Adres:</strong> ${adres}</p>
+                                            <p class="mb-2 text-muted"><strong>👤 Sorumlu:</strong> ${sorumlu}</p>
+                                        </div>
+                                        <div class="mb-4">
+                                            <span class="badge-tel fw-bold">📱 ${telefon}</span>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <a href="tel:${telefon.toString().replace(/\s/g, '')}" class="btn btn-success btn-lg px-4 shadow-sm">📞 Hemen Ara</a>
+                                            <a href="${haritaLink}" target="_blank" class="btn btn-outline-primary btn-lg px-4">🗺️ Yol Tarifi</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                listeDiv.innerHTML += html;
+            }
+        }
+    }
+</script>
+
+</body>
+</html>
