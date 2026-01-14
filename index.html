@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Üniversite Yurt Rehberi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; padding-top: 30px; }
+        .card { margin-bottom: 25px; border: none; transition: transform 0.2s; }
+        .card:hover { transform: translateY(-5px); }
+        .harita-konteyner { width: 100%; height: 300px; background-color: #e9ecef; }
+        iframe { width: 100%; height: 100%; border: 0; }
+        #yukleniyor { text-align: center; padding: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 class="text-center mb-4">🏠 Üniversite Yurt Rehberi</h2>
+    
+    <div class="row justify-content-center mb-5">
+        <div class="col-md-6">
+            <div class="card shadow-sm p-4">
+                <label for="okulSecimi" class="form-label font-weight-bold">Önce Okulunuzu Seçin:</label>
+                <select id="okulSecimi" class="form-select form-select-lg" onchange="yurtlariListele()">
+                    <option value="">Yükleniyor...</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div id="yukleniyor" style="display: none;">Veriler çekiliyor, lütfen bekleyin...</div>
+    
+    <div id="yurtListesi" class="row"></div>
+</div>
+
+<script>
+    let GLOBAL_DATA = null;
+
+    // 1. ADIM: Google Apps Script Linkini Buraya Yapıştır (Tırnak içine)
+    const API_URL = "https://script.google.com/macros/s/AKfycbzmGsvDGlMLpn-hHLk8XhlvVq7lZbWuQ9u8F426gok88AyK0lRPGCNnObel9WYEBJo/exec";
+
+    // Sayfa açıldığında veriyi çek
+    window.onload = function() {
+        document.getElementById("yukleniyor").style.display = "block";
+        
+        fetch(API_URL, { redirect: 'follow' })
+            .then(res => res.json())
+            .then(data => {
+                GLOBAL_DATA = data;
+                verileriIsle(data);
+                document.getElementById("yukleniyor").style.display = "none";
+            })
+            .catch(err => {
+                console.error("Hata:", err);
+                alert("Veriler yüklenemedi. Lütfen Apps Script linkini ve erişim izinlerini kontrol edin.");
+            });
+    };
+
+    function verileriIsle(data) {
+        const select = document.getElementById("okulSecimi");
+        select.innerHTML = '<option value="">Lütfen bir okul seçin...</option>';
+        
+        // Okulları dropdown'a ekle (Sıfırıncı satır başlık olduğu için i=1'den başlar)
+        for (let i = 1; i < data.okulListesi.length; i++) {
+            let option = document.createElement("option");
+            option.value = data.okulListesi[i][0]; // Okul Adı
+            option.text = data.okulListesi[i][0];
+            select.appendChild(option);
+        }
+    }
+
+    function yurtlariListele() {
+        const secilenOkul = document.getElementById("okulSecimi").value;
+        const listeDiv = document.getElementById("yurtListesi");
+        listeDiv.innerHTML = "";
+
+        if (!secilenOkul) return;
+
+        const yurtlar = GLOBAL_DATA.yurtListesi;
+
+        for (let i = 1; i < yurtlar.length; i++) {
+            const yurt = yurtlar[i];
+            const bagliOkul = yurt[0];
+
+            if (bagliOkul === secilenOkul) {
+                const yurtAd = yurt[1];
+                const haritaLink = yurt[2];
+                const adres = yurt[3];
+                const yetkili = yurt[4];
+                const telefon = yurt[5];
+
+                // Embed linkine dönüştür
+                const embedLink = haritaLinkiniDonustur(haritaLink);
+
+                const html = `
+                    <div class="col-12 col-lg-6">
+                        <div class="card shadow-sm h-100">
+                            <div class="row g-0 h-100">
+                                <div class="col-md-5">
+                                    <div class="harita-konteyner">
+                                        <iframe src="${embedLink}" loading="lazy"></iframe>
+                                    </div>
+                                </div>
+                                <div class="col-md-7">
+                                    <div class="card-body d-flex flex-column justify-content-between">
+                                        <div>
+                                            <h5 class="card-title text-primary">${yurtAd}</h5>
+                                            <p class="card-text small"><strong>📍 Adres:</strong> ${adres}</p>
+                                            <p class="card-text small"><strong>👤 Yetkili:</strong> ${yetkili}</p>
+                                            <p class="card-text"><strong>📱 Tel:</strong> <span class="badge bg-info text-dark">${telefon}</span></p>
+                                        </div>
+                                        <div class="mt-3">
+                                            <a href="tel:${telefon.toString().replace(/\s/g, '')}" class="btn btn-success btn-sm w-100 mb-2">📞 ${telefon} Ara</a>
+                                            <a href="${haritaLink}" target="_blank" class="btn btn-outline-primary btn-sm w-100">🗺️ Haritada Aç</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                listeDiv.innerHTML += html;
+            }
+        }
+    }
+
+    function haritaLinkiniDonustur(url) {
+        if (!url) return "";
+        // Eğer zaten embed linki verildiyse (iframe'den src kopyalandıysa)
+        if (url.includes("google.com/maps/embed")) return url;
+        
+        // Eğer standart link ise, Google'ın yerleştirme moduna zorla
+        return "https://www.google.com/maps?q=" + encodeURIComponent(url) + "&output=embed";
+    }
+</script>
+
+</body>
+</html>
