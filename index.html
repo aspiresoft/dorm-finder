@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .yurt-karti {
+      border-bottom: 1px solid #eee;
+      padding: 15px 0;
+    }
+
+    .card {
+    margin-bottom: 20px;
+    overflow: hidden; /* İçerik taşmasını engeller */
+    }
+
+    .harita-konteyner {
+        width: 100%;
+        height: 250px; /* Sabit yükseklik veriyoruz */
+        background-color: #eee;
+    }
+
+    iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container text-center">
+    <h2 class="mb-4">🎓 Okuluna Yakın Yurdu Bul</h2>
+
+    <div id="loading" class="text-muted">Veriler yükleniyor, lütfen bekleyin...</div>
+
+    <div id="icerik" style="display:none;">
+      <select id="okulSecimi" class="form-select form-select-lg mb-4" onchange="yurtlariListele()">
+          <option selected disabled>Lütfen bir okul seçin...</option>
+        </select>
+      <div id="okulDetay" class="card mb-4 d-none">
+        <div class="card-body">
+          <h3 id="detayOkulAdi"></h3>
+          <p id="detayOkulAdres" class="text-muted"></p>
+          <div id="okulHaritaKapsayici" class="ratio ratio-16x9" style="max-height: 200px;">
+            <iframe id="okulIframe" src="" allowfullscreen="" loading="lazy"></iframe>
+          </div>
+        </div>
+      </div>
+      <div id="sonucListesi" class="text-start"></div>
+    </div>
+  </div>
+
+  <script>
+    var tumVeriler = {};
+	
+    // Sayfa açıldığında otomatik çalışır
+  window.onload = function() {
+	// 1. ADIMDA NOT ETTİĞİN YENİ GOOGLE DEPLOY LINKINI BURAYA YAPIŞTIR
+	var veriURL = "https://script.google.com/macros/s/.../exec"; 
+
+	fetch(veriURL)
+	  .then(response => response.json())
+	  .then(data => {
+		// Senin eski verileriIsle fonksiyonun bu gelen veriyi alıp dropdown'u dolduracak
+		verileriIsle(data); 
+	  })
+	  .catch(error => {
+		console.error('Veri çekme hatası:', error);
+		alert("Veriler yüklenemedi, lütfen sayfayı yenileyin.");
+	  });
+  };
+
+    function verileriIsle(data) {
+      tumVeriler = data;
+      var select = document.getElementById("okulSecimi");
+
+      // Dropdown'ı doldur
+      data.okulListesi.forEach(function(r) {
+        console.log("Şu anki satır içeriği (r):", r);
+        if(r[0]) { // Boş satır değilse            
+          var option = document.createElement("option");
+          option.text = r[1];
+          option.value = r[0];
+          select.add(option);
+        }
+      });
+
+      // Yükleniyor yazısını gizle, içeriği göster
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("icerik").style.display = "block";
+    }
+
+    function yurtlariListele() {
+      var secilenID = document.getElementById("okulSecimi").value.toString();
+      var listeDiv = document.getElementById("sonucListesi");
+      var okulDetayDiv = document.getElementById("okulDetay");
+      
+      listeDiv.innerHTML = "";
+      if (!secilenID) {
+          okulDetayDiv.classList.add("d-none");
+          return;
+      }
+
+      // 1. OKUL DETAYLARINI GÖSTER
+      var secilenOkulVerisi = tumVeriler.okulListesi.find(r => r[0].toString() === secilenID);
+      if (secilenOkulVerisi) {
+          okulDetayDiv.classList.remove("d-none");
+          document.getElementById("detayOkulAdi").innerText = secilenOkulVerisi[1];
+          document.getElementById("detayOkulAdres").innerText = secilenOkulVerisi[3]; // D sütunu: Adres
+          
+          // Google Maps Embed Dönüştürücü (C sütunundaki linki embed formatına sokar)
+          var okulHaritaLink = haritaLinkiniDonustur(secilenOkulVerisi[2]); 
+          document.getElementById("okulIframe").src = okulHaritaLink;
+      }
+
+    // 2. YURTLARI LİSTELE
+    var bulunanYurtSayisi = 0;
+    tumVeriler.yurtListesi.forEach(function(yurt) {
+        var bagliOkullar = yurt[0].toString().split(',').map(s => s.trim());
+        
+        if (bagliOkullar.includes(secilenID)) {
+            bulunanYurtSayisi++;
+            
+            // Yurt Harita Linki
+            var yurtHaritaEmbed = haritaLinkiniDonustur(yurt[2]);
+
+            var html = `
+                <div class="card shadow-sm">
+                    <div class="row g-0">
+                        <div class="col-md-5">
+                            <div class="harita-konteyner">
+                                <iframe src="${yurtHaritaEmbed}" loading="lazy"></iframe>
+                            </div>
+                        </div>
+                        <div class="col-md-7">
+                            <div class="card-body">
+                                <h5 class="card-title text-primary">${yurt[1]}</h5>
+                                <p class="mb-1"><strong>📍 Adres:</strong> ${yurt[3]}</p>
+                                <p class="mb-3"><strong>👤 Yetkili:</strong> ${yurt[4]}</p>
+                                <div class="d-grid gap-2 d-md-block">
+                                  <a href="tel:${yurt[5]}" class="btn btn-success">
+                                      📞 ${yurt[5]}
+                                  </a>
+                                  <a href="${yurtHaritaEmbed}" target="_blank" class="btn btn-outline-secondary">
+                                      🔍 Tam Ekran Gör
+                                  </a>
+                              </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            listeDiv.innerHTML += html;
+        }
+    });
+  }
+
+  function haritaLinkiniDonustur(url) {
+      if(!url) return "";
+      
+      // Eğer kazara tüm iframe kodunu yapıştırdıysan, sadece tırnak içindeki linki ayıklar
+      if(url.includes("<iframe")) {
+          var match = url.match(/src="([^"]+)"/);
+          return match ? match[1] : "";
+      }
+      
+      return url; // Zaten temiz link ise direkt döndür
+  }
+  </script>
+</body>
+</html>
