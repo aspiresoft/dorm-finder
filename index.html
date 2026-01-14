@@ -1,91 +1,128 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Okul Yurt Rehberi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f4f7f6; padding: 40px 15px; font-family: 'Segoe UI', sans-serif; }
-        .yurt-kart-sarmalayıcı { display: flex; justify-content: center; width: 100%; margin-bottom: 30px; }
-        .card { 
-            border: none; border-radius: 20px; overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08); width: 100%; max-width: 950px; background: #fff;
+        body {
+            background-color: #f4f7f6;
+            padding: 40px 15px;
+            font-family: 'Segoe UI', sans-serif;
         }
-        .harita-konteyner { width: 100%; height: 100%; min-height: 300px; background-color: #eee; }
-        iframe { width: 100%; height: 100%; border: 0; min-height: 300px; }
-        .badge-tel { background-color: #f0f7ff; color: #007bff; padding: 10px 15px; border-radius: 10px; font-size: 1rem; }
+
+        .yurt-kart-sarmalayıcı {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            border: none;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 950px;
+            background: #fff;
+        }
+
+        .harita-konteyner {
+            width: 100%;
+            height: 100%;
+            min-height: 300px;
+            background-color: #eee;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            min-height: 300px;
+        }
+
+        .badge-tel {
+            background-color: #f0f7ff;
+            color: #007bff;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
     </style>
 </head>
+
 <body>
 
-<div class="container">
-    <div class="text-center mb-5">
-        <h1 class="fw-bold text-dark">🏠 Yurt Rehberi</h1>
-        <p class="text-muted">Okulunuzu seçin, size en uygun yurtları listeleyelim.</p>
-    </div>
-    
-    <div class="row justify-content-center mb-5">
-        <div class="col-md-6">
-            <div class="card p-4 shadow-sm text-center">
-                <label class="form-label fw-bold text-secondary mb-3">Okulunuzu Seçin</label>
-                <select id="okulSecimi" class="form-select form-select-lg" onchange="yurtlariListele()">
-                    <option value="">Veriler yükleniyor...</option>
-                </select>
+    <div class="container">
+        <div class="text-center mb-5">
+            <h1 class="fw-bold text-dark">🏠 Yurt Rehberi</h1>
+            <p class="text-muted">Okulunuzu seçin, size en uygun yurtları listeleyelim.</p>
+        </div>
+
+        <div class="row justify-content-center mb-5">
+            <div class="col-md-6">
+                <div class="card p-4 shadow-sm text-center">
+                    <label class="form-label fw-bold text-secondary mb-3">Okulunuzu Seçin</label>
+                    <select id="okulSecimi" class="form-select form-select-lg" onchange="yurtlariListele()">
+                        <option value="">Veriler yükleniyor...</option>
+                    </select>
+                </div>
             </div>
         </div>
+        <div id="okulDetayAlani" class="row justify-content-center mb-4"></div>
+        <div id="yurtListesi" class="row"></div>
     </div>
-	<div id="okulDetayAlani" class="row justify-content-center mb-4"></div>
-    <div id="yurtListesi" class="row"></div>
-</div>
 
-<script>
-    let GLOBAL_DATA = null;
-    const API_URL = "https://script.google.com/macros/s/AKfycbzpN-iyPdiiHtz_QtzC4sZ-7eqw7MmB0SpdfTK7P24XyaU_wLkC9J9BzN1BWUU5GDw/exec";
+    <script>
+        let GLOBAL_DATA = null;
+        const API_URL = "https://script.google.com/macros/s/AKfycbwn-pop2QX2euJJ458nDnE8mq1fFSFSXsz9uoSZGaBbTMeM6leBwYCCy1Jiwpm5BhU/exec";
 
-    window.onload = function() {
-        console.log("1. Veri çekme başladı...");
-        fetch(API_URL, { redirect: 'follow' })
-            .then(res => res.json())
-            .then(data => {
-                console.log("2. Veri başarıyla alındı:", data);
-                GLOBAL_DATA = data;
-                verileriDoldur(data);
-            })
-            .catch(err => console.error("Hata:", err));
-    };
+        window.onload = function () {
+            console.log("1. Veri çekme başladı...");
+            fetch(API_URL, { redirect: 'follow' })
+                .then(res => res.json())
+                .then(data => {
+                    console.log("2. Veri başarıyla alındı:", data);
+                    GLOBAL_DATA = data;
+                    verileriDoldur(data);
+                })
+                .catch(err => console.error("Hata:", err));
+        };
 
-    function verileriDoldur(data) {
-        const select = document.getElementById("okulSecimi");
-        select.innerHTML = '';
-        
-        data.okulListesi.forEach((okul, index) => {
-            if(okul[0] && okul[1]) {
-                let opt = document.createElement("option");
-                opt.value = okul[0].toString().trim();
-                opt.text = okul[1].toString().trim();
-                select.appendChild(opt);
-            }
-        });
-        console.log("3. Dropdown dolduruldu.");
-    }
+        function verileriDoldur(data) {
+            const select = document.getElementById("okulSecimi");
+            select.innerHTML = '';
 
-    function yurtlariListele() {
-        const secilenOkulID = document.getElementById("okulSecimi").value;
-        console.log("Filtreleme başlatıldı. Aranan ID:", secilenOkulID);
-        const listeDiv = document.getElementById("yurtListesi");
-        listeDiv.innerHTML = "";
-		const okulDetayDiv = document.getElementById("okulDetayAlani");
-		okulDetayDiv.innerHTML = "";
-		
-        if (!secilenOkulID || !GLOBAL_DATA) return;
-		const okulVerisi = GLOBAL_DATA.okulListesi.find(o => o[0].toString().trim() === secilenOkulID);
-    
-		if (okulVerisi) {
-			const okulAd = okulVerisi[1];
-			const okulHarita = okulVerisi[2];
-			const okulAdres = okulVerisi[3];
-			okulDetayDiv.innerHTML = `
+            data.okulListesi.forEach((okul, index) => {
+                if (okul[0] && okul[1]) {
+                    let opt = document.createElement("option");
+                    opt.value = okul[0].toString().trim();
+                    opt.text = okul[1].toString().trim();
+                    select.appendChild(opt);
+                }
+            });
+            console.log("3. Dropdown dolduruldu.");
+        }
+
+        function yurtlariListele() {
+            const secilenOkulID = document.getElementById("okulSecimi").value;
+            console.log("Filtreleme başlatıldı. Aranan ID:", secilenOkulID);
+            const listeDiv = document.getElementById("yurtListesi");
+            listeDiv.innerHTML = "";
+            const okulDetayDiv = document.getElementById("okulDetayAlani");
+            okulDetayDiv.innerHTML = "";
+
+            if (!secilenOkulID || !GLOBAL_DATA) return;
+            const okulVerisi = GLOBAL_DATA.okulListesi.find(o => o[0].toString().trim() === secilenOkulID);
+
+            if (okulVerisi) {
+                const okulAd = okulVerisi[1];
+                const okulHarita = okulVerisi[2];
+                const okulAdres = okulVerisi[3];
+                okulDetayDiv.innerHTML = `
 				<div class="col-md-10 col-lg-8">
 					<div class="card shadow-sm border-primary mb-4" style="border-left: 5px solid #007bff;">
 						<div class="card-body">
@@ -103,30 +140,30 @@
 					</div>
 					<h5 class="text-center mb-4 fw-bold">👇 Yakındaki Yurtlar</h5>
 				</div>`;
-		}
-	
-        const yurtlar = GLOBAL_DATA.yurtListesi;
-        var yurtBulundu = false;
+            }
 
-        yurtlar.forEach((yurt, index) => {
-            // Yurtlar Sayfası A sütunu (ID listesi)
-            const idSutunu = yurt[0] ? yurt[0].toString() : "";
-            
-            // Virgüllü yapıyı parçalayıp diziye çeviriyoruz
-            const okulIDListesi = idSutunu.split(',').map(item => item.trim());
-            console.log(`Satır ${index} | Yurt: ${yurt[1]} | ID Listesi:`, okulIDListesi);
-			
-            // Seçilen ID bu yurtun okul listesinde var mı?
-            if (okulIDListesi.includes(secilenOkulID)) {
-                console.log("Eşleşme bulundu:", yurt[1]);
-				yurtBulundu = true;
-                
-                const yurtAd = yurt[1];
-                const haritaLink = yurt[2];
-                const adres = yurt[3];
-                const sorumlu = yurt[4];
-                const telefon = yurt[5];
-                const html = `
+            const yurtlar = GLOBAL_DATA.yurtListesi;
+            var yurtBulundu = false;
+
+            yurtlar.forEach((yurt, index) => {
+                // Yurtlar Sayfası A sütunu (ID listesi)
+                const idSutunu = yurt[0] ? yurt[0].toString() : "";
+
+                // Virgüllü yapıyı parçalayıp diziye çeviriyoruz
+                const okulIDListesi = idSutunu.split(',').map(item => item.trim());
+                console.log(`Satır ${index} | Yurt: ${yurt[1]} | ID Listesi:`, okulIDListesi);
+
+                // Seçilen ID bu yurtun okul listesinde var mı?
+                if (okulIDListesi.includes(secilenOkulID)) {
+                    console.log("Eşleşme bulundu:", yurt[1]);
+                    yurtBulundu = true;
+
+                    const yurtAd = yurt[1];
+                    const haritaLink = yurt[2];
+                    const adres = yurt[3];
+                    const sorumlu = yurt[4];
+                    const telefon = yurt[5];
+                    const html = `
                     <div class="col-12 yurt-kart-sarmalayıcı">
                         <div class="card shadow">
                             <div class="row g-0">
@@ -149,17 +186,23 @@
                                         </div>
                                         <div class="d-flex gap-2">
                                             <a href="tel:${telefon.toString().replace(/\s/g, '')}" class="btn btn-success btn-lg px-4 shadow-sm" onclick="tikSayisiniArtir('${yurtAd}')">📞 ${telefon}</a>
+                                            <a href="${yurtHaritaLink}" 
+                                                onclick="tikSayisiniArtir('${yurtAd}')" 
+                                                target="_blank" 
+                                                class="btn btn-outline-primary">
+                                                🗺️ Yol Tarifi
+                                                </a>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>`;
-                listeDiv.innerHTML += html;
-            }			
-        });
-        if (!yurtBulundu) {
-				listeDiv.innerHTML = `
+                    listeDiv.innerHTML += html;
+                }
+            });
+            if (!yurtBulundu) {
+                listeDiv.innerHTML = `
 					<div class="col-12 text-center mt-5">
 						<div class="p-5 border rounded-3 bg-light shadow-sm">
 							<h1 class="display-1">🔎</h1>
@@ -167,25 +210,27 @@
 							<p class="text-muted">Seçtiğiniz okul için şu an kayıtlı bir yurt verisi bulunmuyor.</p>
 						</div>
 					</div>`;
-			}
-    }
+            }
+        }
 
-    function tikSayisiniArtir(yurtAdi) {
-    // Arka planda Google'a "bu yurt tıklandı" bilgisini gönderir
-    fetch(API_URL, {
-        method: "POST",
-        mode: "no-cors", // Google Apps Script POST isteklerinde no-cors gerekebilir
-        cache: "no-cache",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            action: "artirTik",
-            yurtAdi: yurtAdi
-        })
-    });
-}
+        function tikSayisiniArtir(yurtAdi) {
+            // Arka planda Google'a "bu yurt tıklandı" bilgisini gönderir
+            console.log("sending data for:" + yurtAdi + "")
+            fetch(API_URL, {
+                method: "POST",
+                mode: "no-cors", // Google Apps Script POST isteklerinde no-cors gerekebilir
+                cache: "no-cache",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "artirTik",
+                    yurtAdi: yurtAdi
+                })
+            });
+        }
 
 
-</script>
+    </script>
 
 </body>
+
 </html>
