@@ -35,7 +35,7 @@
             </div>
         </div>
     </div>
-
+	<div id="okulDetayAlani" class="row justify-content-center mb-4"></div>
     <div id="yurtListesi" class="row"></div>
 </div>
 
@@ -57,7 +57,7 @@
 
     function verileriDoldur(data) {
         const select = document.getElementById("okulSecimi");
-        // select.innerHTML = '<option value="">Lütfen seçiniz...</option>';
+        select.innerHTML = '';
         
         data.okulListesi.forEach((okul, index) => {
             if(okul[0] && okul[1]) {
@@ -73,12 +73,35 @@
     function yurtlariListele() {
         const secilenOkulID = document.getElementById("okulSecimi").value;
         console.log("Filtreleme başlatıldı. Aranan ID:", secilenOkulID);
-
         const listeDiv = document.getElementById("yurtListesi");
         listeDiv.innerHTML = "";
-
+		const okulDetayDiv = document.getElementById("okulDetayAlani");
+		okulDetayDiv.innerHTML = "";
+		
         if (!secilenOkulID || !GLOBAL_DATA) return;
+		const okulVerisi = GLOBAL_DATA.okulListesi.find(o => o[0].toString().trim() === secilenOkulID);
+    
+		if (okulVerisi) {
+			const okulAd = okulVerisi[1];
+			const okulHarita = okulVerisi[2];
+			const okulAdres = okulVerisi[3];
+			const okulEmbed = `https://maps.google.com/maps?q=${encodeURIComponent(okulAd + " " + okulAdres)}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
 
+			okulDetayDiv.innerHTML = `
+				<div class="col-md-10 col-lg-8">
+					<div class="card shadow-sm border-primary mb-4" style="border-left: 5px solid #007bff;">
+						<div class="card-body">
+							<h4 class="fw-bold text-primary">🏫 ${okulAd}</h4>
+							<p class="small text-muted mb-2">📍 ${okulAdres}</p>
+							<div style="height: 200px; border-radius: 10px; overflow: hidden;">
+								<iframe src="${okulEmbed}" width="100%" height="100%"></iframe>
+							</div>
+						</div>
+					</div>
+					<h5 class="text-center mb-4 fw-bold">👇 Yakındaki Yurtlar</h5>
+				</div>`;
+		}
+	
         const yurtlar = GLOBAL_DATA.yurtListesi;
 
         yurtlar.forEach((yurt, index) => {
