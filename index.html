@@ -28,7 +28,7 @@
     <div class="row justify-content-center mb-5">
         <div class="col-md-6">
             <div class="card p-4 shadow-sm text-center">
-                <label class="form-label fw-bold text-secondary mb-3">Üniversitenizi Seçin</label>
+                <label class="form-label fw-bold text-secondary mb-3">Okulunuzu Seçin</label>
                 <select id="okulSecimi" class="form-select form-select-lg" onchange="yurtlariListele()">
                     <option value="">Veriler yükleniyor...</option>
                 </select>
@@ -111,10 +111,13 @@
             // Virgüllü yapıyı parçalayıp diziye çeviriyoruz
             const okulIDListesi = idSutunu.split(',').map(item => item.trim());
             console.log(`Satır ${index} | Yurt: ${yurt[1]} | ID Listesi:`, okulIDListesi);
+			
+			let yurtBulundu = false;
 
             // Seçilen ID bu yurtun okul listesinde var mı?
             if (okulIDListesi.includes(secilenOkulID)) {
                 console.log("Eşleşme bulundu:", yurt[1]);
+				yurtBulundu = true;
                 
                 const yurtAd = yurt[1];
                 const haritaLink = yurt[2];
@@ -150,6 +153,16 @@
                     </div>`;
                 listeDiv.innerHTML += html;
             }
+			if (!yurtBulundu) {
+				listeDiv.innerHTML = `
+					<div class="col-12 text-center mt-5">
+						<div class="p-5 border rounded-3 bg-light shadow-sm">
+							<h1 class="display-1">🔎</h1>
+							<h4 class="fw-bold text-secondary">Üzgünüz, Bu Okula Ait Yurt Bulunamadı</h4>
+							<p class="text-muted">Seçtiğiniz okul için şu an kayıtlı bir yurt verisi bulunmuyor.</p>
+						</div>
+					</div>`;
+			}
         });
     }
 </script>
