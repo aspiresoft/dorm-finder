@@ -108,6 +108,7 @@
 		}
 	
         const yurtlar = GLOBAL_DATA.yurtListesi;
+        var yurtBulundu = false;
 
         yurtlar.forEach((yurt, index) => {
             // Yurtlar Sayfası A sütunu (ID listesi)
@@ -117,8 +118,6 @@
             const okulIDListesi = idSutunu.split(',').map(item => item.trim());
             console.log(`Satır ${index} | Yurt: ${yurt[1]} | ID Listesi:`, okulIDListesi);
 			
-			let yurtBulundu = false;
-
             // Seçilen ID bu yurtun okul listesinde var mı?
             if (okulIDListesi.includes(secilenOkulID)) {
                 console.log("Eşleşme bulundu:", yurt[1]);
@@ -162,8 +161,9 @@
                         </div>
                     </div>`;
                 listeDiv.innerHTML += html;
-            }
-			if (!yurtBulundu) {
+            }			
+        });
+        if (!yurtBulundu) {
 				listeDiv.innerHTML = `
 					<div class="col-12 text-center mt-5">
 						<div class="p-5 border rounded-3 bg-light shadow-sm">
@@ -173,7 +173,6 @@
 						</div>
 					</div>`;
 			}
-        });
     }
 </script>
 
