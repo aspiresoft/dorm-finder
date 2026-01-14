@@ -41,11 +41,11 @@
 
 <script>
     let GLOBAL_DATA = null;
-    const API_URL = "https://script.google.com/macros/s/AKfycbysknNUaemUa-JyPzGRw35-EabXgmZ0oS7D9YjGNkX-DkPzJD-C_8l1VceTNZK2SOk/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbwCDm3BkyOs-TtURKY9ssKaxa5qB07zBR7N8m3vO96F_-eX711vu2ogIMyzPEjtXg/exec";
 
     window.onload = function() {
         console.log("1. Veri çekme başladı...");
-        fetch(API_URL + "?action=getOkullar", { redirect: 'follow' })
+        fetch(API_URL, { redirect: 'follow' })
             .then(res => res.json())
             .then(data => {
                 console.log("2. Veri başarıyla alındı:", data);
@@ -73,10 +73,8 @@
     function yurtlariListele() {
         const secilenOkulID = document.getElementById("okulSecimi").value;
         console.log("Filtreleme başlatıldı. Aranan ID:", secilenOkulID);
-		if (!secilenOkulID) return;
         const listeDiv = document.getElementById("yurtListesi");
-        listeDiv.innerHTML = "Seçilen okula ait yurtlar getiriliyor...";
-		
+        listeDiv.innerHTML = "";
 		const okulDetayDiv = document.getElementById("okulDetayAlani");
 		okulDetayDiv.innerHTML = "";
 		
@@ -103,68 +101,70 @@
 					<h5 class="text-center mb-4 fw-bold">👇 Yakındaki Yurtlar</h5>
 				</div>`;
 		}
-		
-		// Sunucuya "Bana sadece bu okulun yurtlarını getir" diyoruz
-		fetch(API_URL + `?action=getYurtlar&okulID=${secilenOkulID}`, { redirect: 'follow' })
-			.then(res => res.json())
-			.then(data => {
-				// Gelen veriyi (data.yurtListesi) döngüye sokup ekrana bas
-				yurtlariEkranaBas(data.yurtListesi); 
-			});
-        
-    }
-	function yurtlariListele(yurtListesiData) {
-		const listeDiv = document.getElementById("yurtListesi");
-		// Eğer liste boşsa veya sadece başlıktan ibaretse (Google'dan veri dönmediyse)
-		if (!yurtListesiData || yurtListesiData.length < 2) {
-			listeDiv.innerHTML = `
-				<div class="col-12 text-center mt-5">
-					<div class="p-5 border rounded-3 bg-light shadow-sm">
-						<h1 class="display-1">🔎</h1>
-						<h4 class="fw-bold text-secondary">Bu Okula Ait Yurt Bulunamadı</h4>
-						<p class="text-muted">Şu an için bu üniversiteye kayıtlı bir yurt verisi bulunmuyor.</p>
-					</div>
-				</div>`;
-			return;
-		}
-		
-		for (let i = 1; i < yurtListesiData.length; i++) {
-			console.log("Eşleşme bulundu:", yurt[1]);			
-			const yurtAd = yurt[1];
-			const haritaLink = yurt[2];
-			const adres = yurt[3];
-			const sorumlu = yurt[4];
-			const telefon = yurt[5];
-			
-			const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(yurtAd + " " + adres)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+	
+        const yurtlar = GLOBAL_DATA.yurtListesi;
 
-			const html = `
-				<div class="col-12 yurt-kart-sarmalayıcı">
-					<div class="card shadow">
-						<div class="row g-0">
-							<div class="col-md-5">
-								<div class="harita-konteyner">
-									<iframe src="${embedUrl}" allowfullscreen></iframe>
-								</div>
-							</div>
-							<div class="col-md-7 d-flex align-items-center">
-								<div class="card-body p-4 p-lg-5">
-									<h3 class="fw-bold mb-3">${yurtAd}</h3>
-									<div class="mb-4">
-										<p class="mb-2 text-muted"><strong>📍 Adres:</strong> ${adres}</p>
-										<p class="mb-2 text-muted"><strong>👤 Sorumlu:</strong> ${sorumlu}</p>
-									</div>
-									<div class="d-flex gap-2">
-										<a href="tel:${telefon.toString().replace(/\s/g, '')}" class="btn btn-success btn-lg px-4 shadow-sm">📞 ${telefon}</a>
-									</div>
-								</div>
-							</div>
+        yurtlar.forEach((yurt, index) => {
+            // Yurtlar Sayfası A sütunu (ID listesi)
+            const idSutunu = yurt[0] ? yurt[0].toString() : "";
+            
+            // Virgüllü yapıyı parçalayıp diziye çeviriyoruz
+            const okulIDListesi = idSutunu.split(',').map(item => item.trim());
+            console.log(`Satır ${index} | Yurt: ${yurt[1]} | ID Listesi:`, okulIDListesi);
+			
+			let yurtBulundu = false;
+
+            // Seçilen ID bu yurtun okul listesinde var mı?
+            if (okulIDListesi.includes(secilenOkulID)) {
+                console.log("Eşleşme bulundu:", yurt[1]);
+				yurtBulundu = true;
+                
+                const yurtAd = yurt[1];
+                const haritaLink = yurt[2];
+                const adres = yurt[3];
+                const sorumlu = yurt[4];
+                const telefon = yurt[5];
+                
+                const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(yurtAd + " " + adres)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+
+                const html = `
+                    <div class="col-12 yurt-kart-sarmalayıcı">
+                        <div class="card shadow">
+                            <div class="row g-0">
+                                <div class="col-md-5">
+                                    <div class="harita-konteyner">
+                                        <iframe src="${embedUrl}" allowfullscreen></iframe>
+                                    </div>
+                                </div>
+                                <div class="col-md-7 d-flex align-items-center">
+                                    <div class="card-body p-4 p-lg-5">
+                                        <h3 class="fw-bold mb-3">${yurtAd}</h3>
+                                        <div class="mb-4">
+                                            <p class="mb-2 text-muted"><strong>📍 Adres:</strong> ${adres}</p>
+                                            <p class="mb-2 text-muted"><strong>👤 Sorumlu:</strong> ${sorumlu}</p>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <a href="tel:${telefon.toString().replace(/\s/g, '')}" class="btn btn-success btn-lg px-4 shadow-sm">📞 ${telefon}</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                listeDiv.innerHTML += html;
+            }
+			if (!yurtBulundu) {
+				listeDiv.innerHTML = `
+					<div class="col-12 text-center mt-5">
+						<div class="p-5 border rounded-3 bg-light shadow-sm">
+							<h1 class="display-1">🔎</h1>
+							<h4 class="fw-bold text-secondary">Üzgünüz, Bu Okula Ait Yurt Bulunamadı</h4>
+							<p class="text-muted">Seçtiğiniz okul için şu an kayıtlı bir yurt verisi bulunmuyor.</p>
 						</div>
-					</div>
-				</div>`;
-			listeDiv.innerHTML += html;
-        }
-	}
+					</div>`;
+			}
+        });
+    }
 </script>
 
 </body>
