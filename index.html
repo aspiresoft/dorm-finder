@@ -13,7 +13,7 @@
             font-family: 'Segoe UI', sans-serif;
         }
 
-        .yurt-kart-sarmalayıcı {
+        .yurt-kart-sarmalayici {
             display: flex;
             justify-content: center;
             width: 100%;
@@ -25,19 +25,10 @@
             border-radius: 20px;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-            width: 100%;
-            max-width: 950px;
             background: #fff;
         }
 
-        .harita-konteyner {
-            width: 100%;
-            height: 100%;
-            min-height: 300px;
-            background-color: #eee;
-        }
-
-        iframe {
+        .harita-konteyner iframe {
             width: 100%;
             height: 100%;
             border: 0;
@@ -51,183 +42,402 @@
             border-radius: 10px;
             font-size: 1rem;
         }
+
+        .strong-shadow {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
     </style>
 </head>
 
 <body>
-
     <div class="container">
+        <!-- Başlık Bölümü -->
         <div class="text-center mb-5">
             <h1 class="fw-bold text-dark">🏠 Yurt Rehberi</h1>
             <p class="text-muted">Okulunuzu seçin, size en uygun yurtları listeleyelim.</p>
         </div>
 
+        <!-- Okul Seçim Bölümü -->
         <div class="row justify-content-center mb-5">
             <div class="col-md-6">
                 <div class="card p-4 shadow-sm text-center">
                     <label class="form-label fw-bold text-secondary mb-3">Okulunuzu Seçin</label>
-                    <select id="okulSecimi" class="form-select form-select-lg" onchange="yurtlariListele()">
+                    <select id="okulSecimi" class="form-select form-select-lg" onchange="OkulYurtApp.yurtlariListele()">
                         <option value="">Veriler yükleniyor...</option>
                     </select>
                 </div>
             </div>
         </div>
+
+        <!-- Okul Detay Bölümü -->
         <div id="okulDetayAlani" class="row justify-content-center mb-4"></div>
+
+        <!-- Yurt Listesi Bölümü -->
         <div id="yurtListesi" class="row"></div>
     </div>
 
     <script>
-        let GLOBAL_DATA = null;
-        const API_URL = "https://script.google.com/macros/s/AKfycbzTVfLlTDS8IQv9JvLaMoEFZYZnRwBveDmevBF6i0fYyVq6Hsa7Zp0mQDkXDRUJhs0/exec";
-
-        window.onload = function () {
-            console.log("1. Veri çekme başladı...");
-            fetch(API_URL, { redirect: 'follow' })
-                .then(res => res.json())
-                .then(data => {
-                    console.log("2. Veri başarıyla alındı:", data);
-                    GLOBAL_DATA = data;
-                    verileriDoldur(data);
-                })
-                .catch(err => console.error("Hata:", err));
-        };
-
-        function verileriDoldur(data) {
-            const select = document.getElementById("okulSecimi");
-            select.innerHTML = '';
-
-            data.okulListesi.forEach((okul, index) => {
-                if (okul[0] && okul[1]) {
-                    let opt = document.createElement("option");
-                    opt.value = okul[0].toString().trim();
-                    opt.text = okul[1].toString().trim();
-                    select.appendChild(opt);
+        /**
+         * Ana Uygulama Modülü
+         * Tüm uygulama mantığını içeren singleton pattern
+         */
+        const OkulYurtApp = (function () {
+            // ==================== YAPILANDIRMA ====================
+            const CONFIG = {
+                API_URL: "https://script.google.com/macros/s/AKfycbyYoh4gLSi9MyrWJkHc7rEdgkKAHFAVUkCgXrfi0ZVVXUinM9knIFtBaKoXBd0N0VA/exec",
+                CACHE_KEY: "OKUL_YURT_DATA_V1",
+                CACHE_TTL: 5 * 60 * 1000, // 5 dakika
+                SELECTORS: {
+                    okulSecimi: "okulSecimi",
+                    okulDetay: "okulDetayAlani",
+                    yurtListesi: "yurtListesi"
                 }
-            });
-            console.log("3. Dropdown dolduruldu.");
-        }
+            };
 
-        function yurtlariListele() {
-            const secilenOkulID = document.getElementById("okulSecimi").value;
-            console.log("Filtreleme başlatıldı. Aranan ID:", secilenOkulID);
-            const listeDiv = document.getElementById("yurtListesi");
-            listeDiv.innerHTML = "";
-            const okulDetayDiv = document.getElementById("okulDetayAlani");
-            okulDetayDiv.innerHTML = "";
+            // ==================== STATE ====================
+            let globalData = null;
 
-            if (!secilenOkulID || !GLOBAL_DATA) return;
-            const okulVerisi = GLOBAL_DATA.okulListesi.find(o => o[0].toString().trim() === secilenOkulID);
+            // ==================== CACHE YÖNETİMİ ====================
+            const CacheManager = {
+                /**
+                 * Cache'den veri okur
+                 * @returns {Object|null} Cache'deki veri veya null
+                 */
+                load() {
+                    try {
+                        const raw = localStorage.getItem(CONFIG.CACHE_KEY);
+                        if (!raw) return null;
 
-            if (okulVerisi) {
-                const okulAd = okulVerisi[1];
-                const okulHarita = okulVerisi[2];
-                const okulAdres = okulVerisi[3];
-                okulDetayDiv.innerHTML = `
-				<div class="col-md-10 col-lg-8">
-					<div class="card shadow-sm border-primary mb-4" style="border-left: 5px solid #007bff;">
-						<div class="card-body">
-							<h4 class="fw-bold text-primary">🏫 ${okulAd}</h4>
-							<p class="small text-muted mb-2">📍 ${okulAdres}</p>
-							<div style="height: 200px; border-radius: 10px; overflow: hidden;">
-								<iframe
-								  src="${okulHarita}"
-								  style="border:0; width:100%; height:400px;"
-								  loading="lazy"
-								  referrerpolicy="no-referrer-when-downgrade">
-								</iframe>
-							</div>
-						</div>
-					</div>
-					<h5 class="text-center mb-4 fw-bold">👇 Yakındaki Yurtlar</h5>
-				</div>`;
-            }
+                        const parsed = JSON.parse(raw);
+                        const isExpired = Date.now() - parsed.timestamp > CONFIG.CACHE_TTL;
 
-            const yurtlar = GLOBAL_DATA.yurtListesi;
-            var yurtBulundu = false;
+                        if (isExpired) {
+                            console.log("Cache süresi dolmuş, temizleniyor");
+                            this.clear();
+                            return null;
+                        }
 
-            yurtlar.forEach((yurt, index) => {
-                // Yurtlar Sayfası A sütunu (ID listesi)
-                const idSutunu = yurt[0] ? yurt[0].toString() : "";
+                        console.log("Cache başarıyla yüklendi");
+                        return parsed.data;
+                    } catch (error) {
+                        console.error("Cache okuma hatası:", error);
+                        return null;
+                    }
+                },
 
-                // Virgüllü yapıyı parçalayıp diziye çeviriyoruz
-                const okulIDListesi = idSutunu.split(',').map(item => item.trim());
-                console.log(`Satır ${index} | Yurt: ${yurt[1]} | ID Listesi:`, okulIDListesi);
+                /**
+                 * Veriyi cache'e kaydeder
+                 * @param {Object} data - Kaydedilecek veri
+                 */
+                save(data) {
+                    try {
+                        const payload = {
+                            timestamp: Date.now(),
+                            data: data
+                        };
+                        localStorage.setItem(CONFIG.CACHE_KEY, JSON.stringify(payload));
+                        console.log("Veri cache'e kaydedildi");
+                    } catch (error) {
+                        console.error("Cache kaydetme hatası:", error);
+                    }
+                },
 
-                // Seçilen ID bu yurtun okul listesinde var mı?
-                if (okulIDListesi.includes(secilenOkulID)) {
-                    console.log("Eşleşme bulundu:", yurt[1]);
-                    yurtBulundu = true;
+                /**
+                 * Cache'i temizler
+                 */
+                clear() {
+                    localStorage.removeItem(CONFIG.CACHE_KEY);
+                }
+            };
 
-                    const yurtAd = yurt[1];
-                    const haritaLink = yurt[2];
-                    const adres = yurt[3];
-                    const sorumlu = yurt[4];
-                    const telefon = yurt[5];
-                    const html = `
-                    <div class="col-12 yurt-kart-sarmalayıcı">
-                        <div class="card shadow">
-                            <div class="row g-0">
-                                <div class="col-md-5">
-                                    <div class="harita-konteyner">
-										<iframe
-										  src="${haritaLink}"
-										  style="border:0; width:100%; height:400px;"
-										  loading="lazy"
-										  referrerpolicy="no-referrer-when-downgrade">
-										</iframe>
+            // ==================== API İŞLEMLERİ ====================
+            const ApiService = {
+                /**
+                 * Backend'den veri çeker
+                 * @returns {Promise<Object>} API'den gelen veri
+                 */
+                async fetchData() {
+                    try {
+                        const response = await fetch(CONFIG.API_URL, { redirect: "follow" });
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        const data = await response.json();
+                        console.log("Backend'den veri başarıyla alındı");
+                        return data;
+                    } catch (error) {
+                        console.error("API fetch hatası:", error);
+                        throw error;
+                    }
+                },
+
+                /**
+                 * Yurt beğeni sayısını artırır
+                 * @param {string} yurtAdi - Beğenilen yurt adı
+                 */
+                async incrementLike(yurtAdi) {
+                    try {
+                        await fetch(CONFIG.API_URL, {
+                            method: "POST",
+                            mode: "no-cors",
+                            cache: "no-cache",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                action: "artirTik",
+                                yurtAdi: yurtAdi
+                            })
+                        });
+                        console.log(`Beğeni gönderildi: ${yurtAdi}`);
+                    } catch (error) {
+                        console.error("Beğeni gönderme hatası:", error);
+                    }
+                }
+            };
+
+            // ==================== UI İŞLEMLERİ ====================
+            const UIManager = {
+                /**
+                 * Okul dropdown'unu doldurur
+                 * @param {Array} okullar - Okul listesi
+                 */
+                renderOkulDropdown(okullar) {
+                    const select = document.getElementById(CONFIG.SELECTORS.okulSecimi);
+                    select.innerHTML = '<option value="">Bir okul seçin...</option>';
+
+                    okullar.forEach(okul => {
+                        const [id, ad] = okul;
+                        if (id && ad) {
+                            const option = document.createElement("option");
+                            option.value = id.toString().trim();
+                            option.text = ad.toString().trim();
+                            select.appendChild(option);
+                        }
+                    });
+
+                    console.log(`${okullar.length} okul dropdown'a eklendi`);
+                },
+
+                /**
+                 * Seçilen okulun detaylarını gösterir
+                 * @param {Object} okul - Okul verisi
+                 */
+                renderOkulDetay(okul) {
+                    const [, ad, harita, adres] = okul;
+                    const detayDiv = document.getElementById(CONFIG.SELECTORS.okulDetay);
+
+                    detayDiv.innerHTML = `
+                        <div class="col-md-10 col-lg-8">
+                            <div class="card shadow-lg border-primary mb-4 strong-shadow" style="border-left: 5px solid #007bff;">
+                                <div class="card-body">
+                                    <h4 class="fw-bold text-primary">🏫 ${ad}</h4>
+                                    <p class="small text-muted mb-2">📍 ${adres}</p>
+                                    <div style="height: 200px; border-radius: 10px; overflow: hidden;">
+                                        <iframe
+                                            src="${harita}"
+                                            style="border:0; width:100%; height:400px;"
+                                            loading="lazy"
+                                            referrerpolicy="no-referrer-when-downgrade">
+                                        </iframe>
                                     </div>
                                 </div>
-                                <div class="col-md-7 d-flex align-items-center">
-                                    <div class="card-body p-4 p-lg-5">
-                                        <h3 class="fw-bold mb-3">${yurtAd}</h3>
-                                        <div class="mb-4">
-                                            <p class="mb-2 text-muted"><strong>📍 Adres:</strong> ${adres}</p>
-                                            <p class="mb-2 text-muted"><strong>👤 Sorumlu:</strong> ${sorumlu}</p>
+                            </div>
+                            <h5 class="text-center mb-4 fw-bold">👇 Yakındaki Yurtlar</h5>
+                        </div>
+                    `;
+                },
+
+                /**
+                 * Yurt kartı HTML'i oluşturur
+                 * @param {Array} yurt - Yurt verisi
+                 * @returns {string} HTML string
+                 */
+                createYurtCard(yurt) {
+                    const [, ad, harita, adres, sorumlu, telefon] = yurt;
+                    const temizTelefon = telefon.toString().replace(/\s/g, '');
+
+                    return `
+                        <div class="col-12 yurt-kart-sarmalayici">
+                            <div class="card shadow-lg border-primary mb-4 strong-shadow" style="border-right: 5px solid #00ff33;">
+                                <div class="row g-0">
+                                    <div class="col-md-5">
+                                        <div class="harita-konteyner">
+                                            <iframe
+                                                src="${harita}"
+                                                style="border:0; width:100%; height:400px;"
+                                                loading="lazy"
+                                                referrerpolicy="no-referrer-when-downgrade">
+                                            </iframe>
                                         </div>
-                                        <div class="d-flex gap-2">
-                                            <a href="tel:${telefon.toString().replace(/\s/g, '')}" class="btn btn-success btn-lg px-4 shadow-sm" >📞 ${telefon}</a>
-                                            <button onclick="tikSayisiniArtir('${yurtAd}')" class="btn btn-outline-danger btn-sm">
-                                            🤍 Beğen
-                                            </button>
+                                    </div>
+                                    <div class="col-md-7 d-flex align-items-center">
+                                        <div class="card-body p-4 p-lg-5">
+                                            <h3 class="fw-bold mb-3">${ad}</h3>
+                                            <div class="mb-4">
+                                                <p class="mb-2 text-muted"><strong>📍 Adres:</strong> ${adres}</p>
+                                                <p class="mb-2 text-muted"><strong>👤 Sorumlu:</strong> ${sorumlu}</p>
+                                            </div>
+                                            <div class="d-flex gap-2">
+                                                <a href="tel:${temizTelefon}" class="btn btn-success btn-lg px-4 shadow-sm">
+                                                    📞 ${telefon}
+                                                </a>
+                                                <button onclick="OkulYurtApp.handleLikeClick('${ad}')" class="btn btn-outline-danger btn-sm">
+                                                    🤍 Beğen
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>`;
-                    listeDiv.innerHTML += html;
+                    `;
+                },
+
+                /**
+                 * "Yurt bulunamadı" mesajını gösterir
+                 */
+                renderBulunamadi() {
+                    const listeDiv = document.getElementById(CONFIG.SELECTORS.yurtListesi);
+                    listeDiv.innerHTML = `
+                        <div class="col-12 text-center mt-5">
+                            <div class="p-5 border rounded-3 bg-light shadow-sm">
+                                <h1 class="display-1">🔎</h1>
+                                <h4 class="fw-bold text-secondary">Üzgünüz, Bu Okula Ait Yurt Bulunamadı</h4>
+                                <p class="text-muted">Seçtiğiniz okul için şu an kayıtlı bir yurt verisi bulunmuyor.</p>
+                            </div>
+                        </div>
+                    `;
+                },
+
+                /**
+                 * UI'ı temizler
+                 */
+                clearUI() {
+                    document.getElementById(CONFIG.SELECTORS.okulDetay).innerHTML = "";
+                    document.getElementById(CONFIG.SELECTORS.yurtListesi).innerHTML = "";
                 }
-            });
-            if (!yurtBulundu) {
-                listeDiv.innerHTML = `
-					<div class="col-12 text-center mt-5">
-						<div class="p-5 border rounded-3 bg-light shadow-sm">
-							<h1 class="display-1">🔎</h1>
-							<h4 class="fw-bold text-secondary">Üzgünüz, Bu Okula Ait Yurt Bulunamadı</h4>
-							<p class="text-muted">Seçtiğiniz okul için şu an kayıtlı bir yurt verisi bulunmuyor.</p>
-						</div>
-					</div>`;
-            }
-        }
+            };
 
-        function tikSayisiniArtir(yurtAdi) {
-            // Arka planda Google'a "bu yurt tıklandı" bilgisini gönderir
-            console.log("sending data for:" + yurtAdi + "")
-            fetch(API_URL, {
-                method: "POST",
-                mode: "no-cors", // Google Apps Script POST isteklerinde no-cors gerekebilir
-                cache: "no-cache",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    action: "artirTik",
-                    yurtAdi: yurtAdi
-                })
-            });
-        }
+            // ==================== İŞ MANTIKLARI ====================
+            const BusinessLogic = {
+                /**
+                 * Seçilen okula ait yurtları filtreler
+                 * @param {string} okulID - Seçilen okul ID'si
+                 * @returns {Array} Eşleşen yurtlar
+                 */
+                filterYurtlarByOkul(okulID) {
+                    if (!globalData || !globalData.yurtListesi) return [];
 
+                    return globalData.yurtListesi.filter(yurt => {
+                        const idListesi = (yurt[0] || "")
+                            .toString()
+                            .split(',')
+                            .map(id => id.trim());
 
+                        return idListesi.includes(okulID);
+                    });
+                },
+
+                /**
+                 * Okul ID'sine göre okul verisini bulur
+                 * @param {string} okulID - Aranacak okul ID'si
+                 * @returns {Array|null} Okul verisi veya null
+                 */
+                findOkulById(okulID) {
+                    if (!globalData || !globalData.okulListesi) return null;
+
+                    return globalData.okulListesi.find(okul =>
+                        okul[0].toString().trim() === okulID
+                    );
+                }
+            };
+
+            // ==================== PUBLIC API ====================
+            return {
+                /**
+                 * Uygulamayı başlatır
+                 */
+                async init() {
+                    console.log("🚀 Uygulama başlatılıyor...");
+
+                    // 1. Cache kontrolü ve render
+                    const cachedData = CacheManager.load();
+                    if (cachedData) {
+                        globalData = cachedData;
+                        UIManager.renderOkulDropdown(cachedData.okulListesi);
+                    }
+
+                    // 2. Backend'den fresh data çek
+                    try {
+                        const freshData = await ApiService.fetchData();
+
+                        // Veri değişmişse güncelle
+                        if (JSON.stringify(cachedData) !== JSON.stringify(freshData)) {
+                            console.log("✅ Veri güncellendi");
+                            globalData = freshData;
+                            CacheManager.save(freshData);
+                            UIManager.renderOkulDropdown(freshData.okulListesi);
+                        } else {
+                            console.log("ℹ️ Veri değişmedi");
+                        }
+                    } catch (error) {
+                        console.warn("⚠️ Backend'e ulaşılamadı, cache ile devam ediliyor", error);
+                        if (!cachedData) {
+                            alert("Veriler yüklenemedi. Lütfen internet bağlantınızı kontrol edin.");
+                        }
+                    }
+                },
+
+                /**
+                 * Seçilen okula göre yurtları listeler
+                 */
+                yurtlariListele() {
+                    const secilenOkulID = document.getElementById(CONFIG.SELECTORS.okulSecimi).value;
+
+                    UIManager.clearUI();
+
+                    if (!secilenOkulID || !globalData) return;
+
+                    console.log(`🔍 Filtreleme başlatıldı: ${secilenOkulID}`);
+
+                    // Okul detayını göster
+                    const okul = BusinessLogic.findOkulById(secilenOkulID);
+                    if (okul) {
+                        UIManager.renderOkulDetay(okul);
+                    }
+
+                    // Yurtları filtrele ve göster
+                    const eslešenYurtlar = BusinessLogic.filterYurtlarByOkul(secilenOkulID);
+
+                    if (eslešenYurtlar.length === 0) {
+                        UIManager.renderBulunamadi();
+                        return;
+                    }
+
+                    const listeDiv = document.getElementById(CONFIG.SELECTORS.yurtListesi);
+                    listeDiv.innerHTML = eslešenYurtlar
+                        .map(yurt => UIManager.createYurtCard(yurt))
+                        .join('');
+
+                    console.log(`✅ ${eslešenYurtlar.length} yurt listelendi`);
+                },
+
+                /**
+                 * Beğen butonuna tıklandığında çalışır
+                 * @param {string} yurtAdi - Beğenilen yurt adı
+                 */
+                handleLikeClick(yurtAdi) {
+                    ApiService.incrementLike(yurtAdi);
+                    // Kullanıcıya görsel feedback verilebilir
+                    console.log(`❤️ Beğeni: ${yurtAdi}`);
+                }
+            };
+        })();
+
+        // ==================== UYGULAMA BAŞLATMA ====================
+        window.addEventListener('DOMContentLoaded', () => {
+            OkulYurtApp.init();
+        });
     </script>
-
 </body>
 
 </html>
